@@ -1,0 +1,372 @@
+openapi: 3.1.0
+info:
+  title: CampusBridge API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+
+tags:
+  - name: Auth
+  - name: Students
+  - name: Jobs
+  - name: Tutors
+  - name: Career
+  - name: Resume
+  - name: Interview
+  - name: Projects
+
+paths:
+  /auth/wechat/login:
+    post:
+      tags: [Auth]
+      summary: WeChat login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Current user
+
+  /students/me:
+    get:
+      tags: [Students]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Student profile
+    put:
+      tags: [Students]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentProfileInput'
+      responses:
+        '200':
+          description: Updated
+
+  /jobs:
+    get:
+      tags: [Jobs]
+      parameters:
+        - {name: q, in: query, schema: {type: string}}
+        - {name: category, in: query, schema: {type: string}}
+        - {name: city, in: query, schema: {type: string}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: pageSize, in: query, schema: {type: integer, minimum: 1, maximum: 50, default: 20}}
+      responses:
+        '200':
+          description: Job list
+    post:
+      tags: [Jobs]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobInput'
+      responses:
+        '201':
+          description: Created
+
+  /jobs/{id}:
+    get:
+      tags: [Jobs]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Job detail
+
+  /jobs/{id}/apply:
+    post:
+      tags: [Jobs]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resumeId: {type: string}
+                message: {type: string, maxLength: 2000}
+      responses:
+        '201':
+          description: Application submitted
+
+  /tutors:
+    get:
+      tags: [Tutors]
+      parameters:
+        - {name: q, in: query, schema: {type: string}}
+        - {name: subject, in: query, schema: {type: string}}
+        - {name: city, in: query, schema: {type: string}}
+        - {name: page, in: query, schema: {type: integer, default: 1}}
+        - {name: pageSize, in: query, schema: {type: integer, default: 20}}
+      responses:
+        '200':
+          description: Teacher list
+
+  /tutor-requirements:
+    post:
+      tags: [Tutors]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TutorRequirementInput'
+      responses:
+        '201':
+          description: Created
+    get:
+      tags: [Tutors]
+      responses:
+        '200':
+          description: Requirement list
+
+  /ai/career/analyze:
+    post:
+      tags: [Career]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CareerAnalyzeRequest'
+      responses:
+        '200':
+          description: Career analysis
+
+  /ai/career/plan:
+    post:
+      tags: [Career]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CareerPlanRequest'
+      responses:
+        '200':
+          description: Career plan
+
+  /ai/resume/analyze:
+    post:
+      tags: [Resume]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResumeAnalyzeRequest'
+      responses:
+        '200':
+          description: Resume analysis
+
+  /ai/resume/optimize:
+    post:
+      tags: [Resume]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResumeOptimizeRequest'
+      responses:
+        '200':
+          description: Optimized resume
+
+  /ai/interview/create:
+    post:
+      tags: [Interview]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewCreateRequest'
+      responses:
+        '201':
+          description: Session created
+
+  /ai/interview/{id}/answer:
+    post:
+      tags: [Interview]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answer]
+              properties:
+                answer: {type: string, minLength: 1, maxLength: 10000}
+      responses:
+        '200':
+          description: Feedback and follow-up
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    WechatLoginRequest:
+      type: object
+      required: [code]
+      properties:
+        code: {type: string}
+
+    AuthResponse:
+      type: object
+      required: [accessToken, user]
+      properties:
+        accessToken: {type: string}
+        refreshToken: {type: string}
+        user: {$ref: '#/components/schemas/User'}
+
+    User:
+      type: object
+      required: [id, role, status]
+      properties:
+        id: {type: string}
+        role:
+          type: string
+          enum: [student, parent, enterprise, admin]
+        nickname: {type: string}
+        avatarUrl: {type: string}
+        status:
+          type: string
+          enum: [active, blocked, pending]
+
+    StudentProfileInput:
+      type: object
+      properties:
+        realName: {type: string}
+        university: {type: string}
+        college: {type: string}
+        major: {type: string}
+        education: {type: string}
+        grade: {type: string}
+        city: {type: string}
+        skills:
+          type: array
+          items: {type: string}
+        subjects:
+          type: array
+          items: {type: string}
+        careerTarget: {type: string}
+        expectedSalary: {type: number}
+        availableTime: {type: string}
+
+    JobInput:
+      type: object
+      required: [title, category, description]
+      properties:
+        title: {type: string, minLength: 2, maxLength: 100}
+        category:
+          type: string
+          enum: [part_time, internship, project, research, campus]
+        description: {type: string, minLength: 10, maxLength: 10000}
+        companyName: {type: string}
+        location: {type: string}
+        remote: {type: boolean}
+        salaryMin: {type: number}
+        salaryMax: {type: number}
+        salaryUnit:
+          type: string
+          enum: [hour, day, month, project]
+        requiredSkills:
+          type: array
+          items: {type: string}
+        requiredEducation: {type: string}
+        requiredMajor: {type: string}
+
+    TutorRequirementInput:
+      type: object
+      required: [subject, studentGrade, teachingMode]
+      properties:
+        subject: {type: string}
+        studentGrade: {type: string}
+        teachingMode:
+          type: string
+          enum: [online, offline, both]
+        city: {type: string}
+        district: {type: string}
+        frequency: {type: string}
+        duration: {type: string}
+        expectedRate: {type: number}
+        requirements: {type: string}
+
+    CareerAnalyzeRequest:
+      type: object
+      required: [profile]
+      properties:
+        profile:
+          type: object
+          additionalProperties: true
+
+    CareerPlanRequest:
+      type: object
+      required: [targetRole]
+      properties:
+        targetRole: {type: string}
+        targetIndustry: {type: string}
+        targetCity: {type: string}
+        profile:
+          type: object
+          additionalProperties: true
+
+    ResumeAnalyzeRequest:
+      type: object
+      required: [resumeId]
+      properties:
+        resumeId: {type: string}
+        targetJob: {type: string}
+
+    ResumeOptimizeRequest:
+      type: object
+      required: [resumeId]
+      properties:
+        resumeId: {type: string}
+        targetJob: {type: string}
+
+    InterviewCreateRequest:
+      type: object
+      required: [targetRole]
+      properties:
+        targetRole: {type: string}
+        targetCompany: {type: string}
+        resumeId: {type: string}
